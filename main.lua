@@ -36,14 +36,9 @@ g.hitboxType = "Forcefield"
 g.rainbowHitboxEnabled = false
 g.rainbowSpeed = 0.5
 g.ping = 0.12
--- Pull Vector / Long Arm
-getgenv().PullVectorOn = false
-getgenv().PullVectorSpeed = 2
-getgenv().PullVectorRadius = 35
-getgenv().pullVectoredBalls = {}
--- Void Arm
-getgenv().voidArmOn = false
-getgenv().voidArmSize = 4
+-- Long Arm (physical resizing)
+getgenv().longArmOn = false
+getgenv().longArmSize = 4
 
 local hitboxes, velocities, lastPositions = {}, {}, {}
 local rainbowHue = 0
@@ -162,41 +157,28 @@ RunService.Heartbeat:Connect(function(dt)
             clearHitbox(ball)
         end
 
-        -- Magnet + Pull Vector
-        if leftCatch and rightCatch then
+        -- Magnet
+        if leftCatch and rightCatch and g.magnetEnabled then
             local predictedPos = ball.Position + (velocities[ball] or Vector3.new()) * g.ping
-
-            -- Pull Vector / Long Arm
-            if PullVectorOn then
-                local root = char:FindFirstChild("HumanoidRootPart")
-                if root and (root.Position - ball.Position).Magnitude <= PullVectorRadius then
-                    local dir = (ball.Position - root.Position).Unit
-                    root.AssemblyLinearVelocity = dir * PullVectorSpeed * 25
-                end
-            end
-
-            -- Magnet
-            if g.magnetEnabled then
-                local nearest = nearestPart(ball, {leftCatch, rightCatch})
-                if nearest and (nearest.Position - predictedPos).Magnitude <= getRange() then
-                    pcall(function()
-                        firetouchinterest(leftCatch, ball, 0)
-                        firetouchinterest(leftCatch, ball, 1)
-                        firetouchinterest(rightCatch, ball, 0)
-                        firetouchinterest(rightCatch, ball, 1)
-                    end)
-                end
+            local nearest = nearestPart(ball, {leftCatch, rightCatch})
+            if nearest and (nearest.Position - predictedPos).Magnitude <= getRange() then
+                pcall(function()
+                    firetouchinterest(leftCatch, ball, 0)
+                    firetouchinterest(leftCatch, ball, 1)
+                    firetouchinterest(rightCatch, ball, 0)
+                    firetouchinterest(rightCatch, ball, 1)
+                end)
             end
         end
     end
 
-    -- Void Arm
-    if voidArmOn and char then
+    -- Long Arm (physical resizing)
+    if longArmOn and char then
         local l = char:FindFirstChild("Left Arm")
         local r = char:FindFirstChild("Right Arm")
         if l and r then
-            l.Size = Vector3.new(1, voidArmSize, 1)
-            r.Size = Vector3.new(1, voidArmSize, 1)
+            l.Size = Vector3.new(1, longArmSize, 1)
+            r.Size = Vector3.new(1, longArmSize, 1)
         end
     elseif char then
         local l = char:FindFirstChild("Left Arm")
@@ -222,16 +204,10 @@ CatchingTab:CreateDropdown({Name="Hitbox Type",Options={"Forcefield","Sphere","B
 CatchingTab:CreateToggle({Name="Rainbow Hitbox",CurrentValue=false,Flag="RainbowHitbox",Callback=function(v) g.rainbowHitboxEnabled=v end})
 CatchingTab:CreateSlider({Name="Rainbow Speed",Range={0.01,2},Increment=0.01,CurrentValue=0.5,Flag="RainbowSpeed",Callback=function(v) g.rainbowSpeed=v end})
 
--- Long Arm / Pull Vector Section
+-- Long Arm Section
 CatchingTab:CreateSection("Long Arm Settings")
-CatchingTab:CreateToggle({Name="Enable Long Arm",CurrentValue=false,Flag="PullVectorToggle",Callback=function(v) PullVectorOn=v end})
-CatchingTab:CreateSlider({Name="Arm Speed",Range={1,5},Increment=0.1,CurrentValue=2,Flag="PullVectorSpeed",Callback=function(v) PullVectorSpeed=v end})
-CatchingTab:CreateSlider({Name="Arm Radius",Range={10,50},Increment=1,CurrentValue=35,Flag="PullVectorRadius",Callback=function(v) PullVectorRadius=v end})
-
--- Void Arm Section
-CatchingTab:CreateSection("Void Arm Settings")
-CatchingTab:CreateToggle({Name="Enable Void Arm",CurrentValue=false,Flag="VoidArmToggle",Callback=function(v) voidArmOn=v end})
-CatchingTab:CreateSlider({Name="Arm Length",Range={2,20},Increment=0.1,CurrentValue=4,Flag="VoidArmSize",Callback=function(v) voidArmSize=v end})
+CatchingTab:CreateToggle({Name="Enable Long Arm",CurrentValue=false,Flag="LongArmToggle",Callback=function(v) longArmOn=v end})
+CatchingTab:CreateSlider({Name="Arm Length",Range={2,20},Increment=0.1,CurrentValue=4,Flag="LongArmSize",Callback=function(v) longArmSize=v end})
 
 -- Notification
-Rayfield:Notify({Title="Football Fusion Loaded",Content="Magnet, Hitbox, Long Arm, and Void Arm ready.",Duration=5,Image="rewind"})
+Rayfield:Notify({Title="Football Fusion Loaded",Content="Magnet, Hitbox, and Long Arm ready.",Duration=5,Image="rewind"})
